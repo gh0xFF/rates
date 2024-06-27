@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+
+  database:
+    image: "mariadb:latest"
+    container_name: "mariadb"
+    restart: on-failure
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: "rates"
+      MYSQL_ROOT_PASSWORD: "password"
+    volumes:
+      - "./resources/db.sql:/docker-entrypoint-initdb.d/db.sql"
+    networks:
+      - bridge_network
+
+  rates:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure
+    expose:
+      - 8080:8080
+      - 3306:3306
+      - 80:80
+      - 53:53
+    ports:
+      - 8080:8080
+      # - 3306:3306
+      - 80:80
+      - 53:53
+    depends_on:
+      - database
+    networks:
+      - bridge_network
+    environment:
+      - ENV=prod
+      - PORT=8080
+      - CONNECTION_STRING=root:password@tcp(database:3306)/rates
+      - RATES_URL=http://api.nbrb.by/exrates/rates?periodicity=0
+
+networks:
+  bridge_network:
+    driver: bridge
